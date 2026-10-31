@@ -23,20 +23,7 @@ jobs:
 
       - name: Unzip Xcode Project
         run: |
-          python3 -c "
-          import zipfile, os
-          with zipfile.ZipFile('NRO_VNS_Xcode.zip', 'r') as z:
-              for m in z.infolist():
-                  clean = m.filename.replace('\\', '/').strip('/')
-                  if not clean: continue
-                  dst = os.path.join('xcode_project', clean)
-                  if m.is_dir() or m.filename.endswith('/') or m.filename.endswith('\\'):
-                      os.makedirs(dst, exist_ok=True)
-                  else:
-                      os.makedirs(os.path.dirname(dst), exist_ok=True)
-                      with z.open(m) as src, open(dst, 'wb') as out:
-                          out.write(src.read())
-          "
+          python3 unzip_tool.py
           ls -la xcode_project/NRO_VNS_Xcode
 
       - name: Build Archive (Unsigned for Sideload / TrollStore)
