@@ -1,11 +1,65 @@
-name: Test Runner
+name: Build NRO VNS iOS IPA
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  test-mac:
+  build-ipa:
     runs-on: macos-latest
     steps:
-      - name: Test
-        run: echo "Hello from macOS!" && uname -a && xcodebuild -version
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Xcode Project Archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Downloading NRO_VNS_Xcode.zip from release source-v1..."
+          gh release download source-v1 -p "NRO_VNS_Xcode.zip" --repo ${{ github.repository }}
+          ls -lh NRO_VNS_Xcode.zip
+
+      - name: Unzip Xcode Project
+        run: |
+          unzip -q NRO_VNS_Xcode.zip -d xcode_project
+          ls -la xcode_project/NRO_VNS_Xcode
+
+      - name: Build Archive (Unsigned for Sideload / TrollStore)
+        run: |
+          cd xcode_project/NRO_VNS_Xcode
+          mkdir -p ../../build
+          xcodebuild clean archive \
+            -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath ../../build/Unity-iPhone.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Package IPA
+        run: |
+          echo "Packaging IPA from archive..."
+          mkdir -p Payload
+          cp -r build/Unity-iPhone.xcarchive/Products/Applications/*.app Payload/
+          zip -r -q NRO_VNS.ipa Payload
+          ls -lh NRO_VNS.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NRO_VNS_iOS_IPA
+          path: NRO_VNS.ipa
+          retention-days: 14
+
+      - name: Attach IPA to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload source-v1 NRO_VNS.ipa --clobber --repo ${{ github.repository }}
+          echo "IPA published to release successfully!"
