@@ -24,18 +24,18 @@ jobs:
       - name: Unzip Xcode Project
         run: |
           python3 unzip_tool.py
-          ls -la xcode_project/NRO_VNS_Xcode
+          ls -la xcode_project
 
       - name: Build Archive (Unsigned for Sideload / TrollStore)
         run: |
-          cd xcode_project/NRO_VNS_Xcode
-          mkdir -p ../../build
+          cd xcode_project
+          mkdir -p ../build
           xcodebuild clean archive \
             -project Unity-iPhone.xcodeproj \
             -scheme Unity-iPhone \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath ../../build/Unity-iPhone.xcarchive \
+            -archivePath ../build/Unity-iPhone.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
